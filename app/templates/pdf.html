@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte de Consulta</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; }
+        h1, h2 { color: #2c3e50; }
+        .result { margin-bottom: 30px; }
+        .ok { color: green; }
+        .fail { color: red; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+    </style>
+</head>
+<body>
+    <h1>Reporte de Consulta</h1>
+    <p><strong>Nombre:</strong> {{ nombre }}</p>
+    <p><strong>Cédula:</strong> {{ cedula }}</p>
+    <p><strong>Correo:</strong> {{ correo }}</p>
+    <hr>
+    {% for r in resultados %}
+        <div class="result">
+            <h2>{{ r.tipo }}</h2>
+            <p><strong>Identificador:</strong> {{ r.identificador }}</p>
+            {% if r.success and r.resultados %}
+                {% if r.tipo == "SIMIT" %}
+                    {% if r.resultados.comparendos %}
+                        <table>
+                            <tr>
+                                <th>Fecha</th><th>Estado</th><th>Valor</th><th>Descuento</th><th>Saldo</th>
+                            </tr>
+                            {% for multa in r.resultados.comparendos %}
+                                <tr>
+                                    <td>{{ multa.fecha }}</td>
+                                    <td>{{ multa.estado }}</td>
+                                    <td>{{ multa.valor }}</td>
+                                    <td>{{ multa.descuento }}</td>
+                                    <td>{{ multa.saldo }}</td>
+                                </tr>
+                            {% endfor %}
+                        </table>
+                    {% else %}
+                        <p class="ok">No se encontraron comparendos o multas pendientes.</p>
+                    {% endif %}
+                {% elif r.tipo == "Antecedentes Policía" %}
+                    <p>{{ r.resultados.mensaje }}</p>
+                {% endif %}
+            {% else %}
+                <p class="fail">Error: {{ r.error }}</p>
+            {% endif %}
+        </div>
+    {% endfor %}
+</body>
+</html>
