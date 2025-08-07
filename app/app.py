@@ -5,6 +5,7 @@ from scraping_documento_policia import antecedentes_judiciales
 import pdfkit
 import os
 import time
+from datetime import datetime
 
 app = Flask(__name__)
 path_wkhtmltopdf = r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe'
@@ -52,7 +53,7 @@ def simit_completo():
     # Antecedentes Policía
     if "antecedentes_policia" in sites and cedula and nombre:
         primer_nombre = nombre.split()[0]
-        primer_apellido = nombre.split()[-1]
+        primer_apellido = nombre.split()[-1] if len(nombre.split()) > 1 else ""
         antecedentes_result = antecedentes_judiciales("Cédula de Ciudadanía", cedula, primer_apellido, primer_nombre, headless=headless)
         resultados.append({
             "tipo": "antecedentes",
@@ -65,29 +66,41 @@ def simit_completo():
             success = False
             error = antecedentes_result["error"]
 
-    # Puedes agregar otros sitios aquí...
-
     # Generación PDF (opcional)
     pdf_file = None
     if generar_pdf and resultados:
-        from flask import render_template_string
-        html = render_template_string("""
-        <h1>Resultados de Consulta</h1>
-        <ul>
-        {% for r in resultados %}
-            <li>
-                <strong>{{ r.tipo }}:</strong> {{ r.identificador }}
-                {% if r.success %}
-                    <pre>{{ r.resultados }}</pre>
-                {% else %}
-                    <span style="color: red;">{{ r.error }}</span>
-                {% endif %}
-            </li>
-        {% endfor %}
-        </ul>
-        """, resultados=resultados)
-        pdf_file = f"resultados_{int(time.time())}.pdf"
-        pdfkit.from_string(html, pdf_file, configuration=config)
+        try:
+            fecha_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            # Usar el template mejorado
+            html_content = render_template("pdf.html", 
+                                         resultados=resultados,
+                                         nombre=nombre,
+                                         cedula=cedula,
+                                         correo=correo,
+                                         fecha_consulta=fecha_actual,
+                                         fecha_generacion=fecha_actual)
+            
+            pdf_filename = f"reporte_simit_{cedula}_{int(time.time())}.pdf"
+            
+            # Opciones para mejorar el PDF
+            options = {
+                'page-size': 'A4',
+                'margin-top': '0.75in',
+                'margin-right': '0.75in',
+                'margin-bottom': '0.75in',
+                'margin-left': '0.75in',
+                'encoding': "UTF-8",
+                'no-outline': None,
+                'enable-local-file-access': None
+            }
+            
+            pdfkit.from_string(html_content, pdf_filename, configuration=config, options=options)
+            pdf_file = pdf_filename
+            
+        except Exception as e:
+            print(f"Error generando PDF: {str(e)}")
+            pdf_file = None
 
     return jsonify({
         "success": success,
@@ -99,7 +112,10 @@ def simit_completo():
 
 @app.route("/api/jobs/simit/pdf/<filename>")
 def descargar_pdf(filename):
-    return send_file(filename, as_attachment=True)
+    try:
+        return send_file(filename, as_attachment=True, download_name=f"reporte_simit_{filename}")
+    except FileNotFoundError:
+        return jsonify({"error": "Archivo PDF no encontrado"}), 404
 
 if __name__ == "__main__":
     app.run(debug=True)
