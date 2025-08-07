@@ -1,5 +1,5 @@
 import html
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for
 from scraping_documento_simit import scrape_simit_por_documento
 from scraping_documento_policia import antecedentes_judiciales
 import pdfkit
@@ -21,6 +21,26 @@ def genera_pdf():
 @app.route("/")
 def home():
     return render_template("index.html")
+
+@app.route("/success")
+def success():
+    # Obtener parámetros de la URL
+    nombre = request.args.get('nombre', '')
+    cedula = request.args.get('cedula', '')
+    fecha_consulta = request.args.get('fecha_consulta', '')
+    consultas_exitosas = request.args.get('consultas_exitosas', '0')
+    total_multas = request.args.get('total_multas', '0')
+    tiene_antecedentes = request.args.get('tiene_antecedentes', 'false') == 'true'
+    pdf_generado = request.args.get('pdf_generado', '')
+    
+    return render_template("success.html",
+                         nombre=nombre,
+                         cedula=cedula,
+                         fecha_consulta=fecha_consulta,
+                         consultas_exitosas=consultas_exitosas,
+                         total_multas=total_multas,
+                         tiene_antecedentes=tiene_antecedentes,
+                         pdf_generado=pdf_generado)
     
 @app.route("/api/jobs/simit/completo", methods=["POST"])
 def simit_completo():
@@ -35,10 +55,18 @@ def simit_completo():
     resultados = []
     success = True
     error = None
+    total_multas = 0
+    tiene_antecedentes = False
+    consultas_exitosas = 0
 
     # SIMIT por documento
     if "simit_documento" in sites and cedula:
         simit_result = scrape_simit_por_documento(cedula, headless=headless)
+        if "error" not in simit_result:
+            consultas_exitosas += 1
+            if simit_result.get("multas_encontradas") and simit_result.get("comparendos"):
+                total_multas += len(simit_result["comparendos"])
+        
         resultados.append({
             "tipo": "documento",
             "identificador": cedula,
@@ -46,6 +74,7 @@ def simit_completo():
             "resultados": simit_result if "error" not in simit_result else None,
             "error": simit_result.get("error") if "error" in simit_result else ""
         })
+        
         if "error" in simit_result:
             success = False
             error = simit_result["error"]
@@ -55,6 +84,12 @@ def simit_completo():
         primer_nombre = nombre.split()[0]
         primer_apellido = nombre.split()[-1] if len(nombre.split()) > 1 else ""
         antecedentes_result = antecedentes_judiciales("Cédula de Ciudadanía", cedula, primer_apellido, primer_nombre, headless=headless)
+        
+        if "error" not in antecedentes_result:
+            consultas_exitosas += 1
+            if antecedentes_result.get("tiene_antecedentes"):
+                tiene_antecedentes = True
+        
         resultados.append({
             "tipo": "antecedentes",
             "identificador": cedula,
@@ -62,12 +97,13 @@ def simit_completo():
             "resultados": antecedentes_result if "error" not in antecedentes_result else None,
             "error": antecedentes_result.get("error") if "error" in antecedentes_result else ""
         })
+        
         if "error" in antecedentes_result:
             success = False
             error = antecedentes_result["error"]
 
     # Generación PDF (opcional)
-    pdf_file = None
+    pdf_filename = None
     if generar_pdf and resultados:
         try:
             fecha_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -81,39 +117,53 @@ def simit_completo():
                                          fecha_consulta=fecha_actual,
                                          fecha_generacion=fecha_actual)
             
-            pdf_filename = f"reporte_simit_{cedula}_{int(time.time())}.pdf"
+            pdf_filename = f"reporte_integral_{cedula}_{int(time.time())}.pdf"
             
             # Opciones para mejorar el PDF
             options = {
                 'page-size': 'A4',
-                'margin-top': '0.75in',
-                'margin-right': '0.75in',
-                'margin-bottom': '0.75in',
-                'margin-left': '0.75in',
+                'margin-top': '0.5in',
+                'margin-right': '0.5in',
+                'margin-bottom': '0.5in',
+                'margin-left': '0.5in',
                 'encoding': "UTF-8",
                 'no-outline': None,
-                'enable-local-file-access': None
+                'enable-local-file-access': None,
+                'print-media-type': None
             }
             
             pdfkit.from_string(html_content, pdf_filename, configuration=config, options=options)
-            pdf_file = pdf_filename
             
         except Exception as e:
             print(f"Error generando PDF: {str(e)}")
-            pdf_file = None
+            pdf_filename = None
 
+    # Si todo es exitoso, redirigir a página de éxito
+    if success and resultados:
+        fecha_consulta = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        return redirect(url_for('success', 
+                              nombre=nombre or '',
+                              cedula=cedula,
+                              fecha_consulta=fecha_consulta,
+                              consultas_exitosas=consultas_exitosas,
+                              total_multas=total_multas,
+                              tiene_antecedentes=str(tiene_antecedentes).lower(),
+                              pdf_generado=pdf_filename or ''))
+    
+    # Si hay errores, devolver JSON como antes
     return jsonify({
         "success": success,
         "resultados": resultados,
         "nombre": nombre,
         "timestamp": int(time.time()),
-        "pdf_generado": pdf_file
+        "pdf_generado": pdf_filename,
+        "error": error
     })
 
 @app.route("/api/jobs/simit/pdf/<filename>")
 def descargar_pdf(filename):
     try:
-        return send_file(filename, as_attachment=True, download_name=f"reporte_simit_{filename}")
+        return send_file(filename, as_attachment=True, download_name=f"reporte_integral_{filename}")
     except FileNotFoundError:
         return jsonify({"error": "Archivo PDF no encontrado"}), 404
 
