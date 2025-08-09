@@ -57,13 +57,15 @@ python app.py
 ## Estructura
 
 ```
-app/
-├── app.py              # Aplicación principal Flask
-├── scraping_simit.py   # Lógica para consultar SIMIT
-├── scraping_policia.py # Lógica para consultar Policía
-├── templates/          # HTML templates
-├── CSS/               # Estilos (aunque están inline en los HTML)
-└── requirements.txt   # Dependencias
+C:\USERS\USUARIO\DOCUMENTS\APPSCRAPING
+
+├───app
+│   ├───CSS
+│   ├───data
+│   ├───static
+│   │   └───pdfs
+│   ├───templates
+└───pdfs
 ```
 
 ## Problemas comunes
