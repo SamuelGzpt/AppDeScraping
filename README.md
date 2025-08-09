@@ -52,7 +52,6 @@ python app.py
 - Esta app usa Selenium, así que verás ventanas del navegador abriéndose
 - La consulta de Policía requiere interacción manual para el CAPTCHA
 - Los datos no se guardan en ningún lado, solo en la sesión mientras usas la app
-- Es solo para uso personal y educativo
 
 ## Estructura
 
