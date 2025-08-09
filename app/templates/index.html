@@ -3,498 +3,338 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Consultas Scraping</title>
+    <title>Consulta scraping</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        /* CSS inline directo */
+        :root {
+            --primary-blue: #1e40af;
+            --primary-blue-light: #3b82f6;
+            --secondary-blue: #1f2937;
+            --dark-bg: #374151;
+            --darker-bg: #1f2937;
+            --card-bg: #4b5563;
+            --input-bg: #6b7280;
+            --text-white: #ffffff;
+            --text-light: #d1d5db;
+            --text-muted: #9ca3af;
+            --border-radius: 16px;
+            --border-radius-sm: 8px;
+            --shadow-dark: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #64748b 0%, #475569 25%, #334155 50%, #1e293b 75%, #0f172a 100%);
+            min-height: 100vh;
+            color: var(--text-white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        /* Capa adicional de difuminado azul-gris */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 30% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 80%, rgba(148, 163, 184, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 420px;
+            width: 100%;
+            padding: 0;
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-white);
+            text-align: center;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        h1 i {
+            color: var(--primary-blue-light);
+        }
+
+        #scrapingForm {
+            background: var(--darker-bg);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow-dark);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: var(--text-light);
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-label i {
+            color: var(--primary-blue-light);
+            width: 16px;
+        }
+
+        .form-control,
+        .form-select {
+            border: none;
+            border-radius: var(--border-radius-sm);
+            padding: 0.875rem 1rem;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            background: var(--card-bg);
+            color: var(--text-white);
+            margin-bottom: 1.25rem;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+            width: 100%;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            background: var(--input-bg);
+            box-shadow: 0 0 0 2px var(--primary-blue-light);
+            outline: none;
+        }
+
+        .form-control::placeholder {
+            color: var(--text-muted);
+        }
+
+        .row {
+            margin-top: 1.5rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .col-md-6 {
+            flex: 1;
+        }
+
+        .site-card {
+            border: 1px solid rgba(107, 114, 128, 0.3);
+            border-radius: var(--border-radius-sm);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: var(--card-bg);
+        }
+
+        .site-card:hover {
+            border-color: var(--primary-blue-light);
+            transform: translateY(-2px);
+        }
+
+        .site-card.selected {
+            border-color: var(--primary-blue-light);
+            background: rgba(59, 130, 246, 0.1);
+            box-shadow: 0 0 0 1px var(--primary-blue-light);
+        }
+
+        .site-card .card-body {
+            padding: 1.25rem;
+            text-align: center;
+        }
+
+        .site-card i {
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            margin-bottom: 0.75rem;
+            display: block;
+            transition: all 0.3s ease;
+        }
+
+        .site-card.selected i {
+            color: var(--primary-blue-light);
+        }
+
+        .site-card .card-title {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 0.375rem;
+            color: var(--text-white);
+        }
+
+        .site-card .card-text {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        .site-card.selected .card-title {
+            color: var(--primary-blue-light);
+        }
+
+        .btn-primary {
+            background: var(--primary-blue);
+            border: none;
+            padding: 1rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: var(--border-radius-sm);
+            width: 100%;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            color: var(--text-white);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-blue-light);
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 480px) {
+            body { padding: 1rem; }
+            .container { max-width: 100%; }
+            #scrapingForm { padding: 1.5rem; }
+            .row { flex-direction: column; gap: 0.75rem; }
+        }
+    </style>
 </head>
 <body>
-    <div class="container py-5">
-        <div class="row justify-content-center">
-            <div class="col-lg-10">
-                <div class="main-container p-5">
-                    <!-- Header -->
-                    <div class="text-center mb-5">
-                        <h1 class="display-4 fw-bold text-primary">
-                            <i class=""></i> Sistema Scraping
-                        </h1>
-                        <p class="lead text-muted">Consulta de datos</p>
-                        <div class="simit-badge">
-                            <i class="fas fa-shield-alt"></i> Consultas Seguras
-                        </div>
+
+<div class="container py-4">
+    <h1>
+        <i class="fas fa-search"></i>
+        Consulta Datos
+    </h1>
+
+    <form id="scrapingForm" method="POST" action="{{ url_for('scraping') }}">
+        <div class="mb-3">
+            <label for="tipo_consulta" class="form-label">
+                <i class="fas fa-list-ul"></i>
+                Tipo de consulta
+            </label>
+            <select class="form-select" id="tipo_consulta" name="tipo_consulta" required>
+                <option value="">Seleccione...</option>
+                <option value="documento">Por Cédula</option>
+                <option value="pasaporte">Por Pasaporte</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label for="nombre" class="form-label">
+                <i class="fas fa-user"></i>
+                Nombre
+            </label>
+            <input type="text" class="form-control" id="nombre" name="Nombre" placeholder="Nombre completo">
+        </div>
+
+        <div class="mb-3">
+            <label for="cedula" class="form-label">
+                <i class="fas fa-id-badge"></i>
+                Documento
+            </label>
+            <input type="text" class="form-control" id="cedula" name="cedula" placeholder="Número de documento">
+        </div>
+
+        <div class="mb-3">
+            <label for="correo" class="form-label">
+                <i class="fas fa-envelope"></i>
+                Correo
+            </label>
+            <input type="email" class="form-control" id="correo" name="correo" placeholder="correo@ejemplo.com">
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card site-card selected" onclick="toggleSite('simit_documento')">
+                    <div class="card-body">
+                        <i class="fas fa-car"></i>
+                        <h5 class="card-title">SIMIT</h5>
+                        <p class="card-text">Infracciones tránsito</p>
+                        <input type="checkbox" name="sites" value="simit_documento" checked hidden>
                     </div>
-
-                    <!-- Pestañas de Navegación -->
-                    <ul class="nav nav-pills nav-fill mb-4" id="consultaTabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="individual-tab" data-bs-toggle="pill" data-bs-target="#individual" type="button" role="tab">
-                                <i class="fas fa-user"></i> Consulta Individual
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="masiva-tab" data-bs-toggle="pill" data-bs-target="#masiva" type="button" role="tab">
-                                <i class="fas fa-file-excel"></i> Consulta Masiva (Excel)
-                            </button>
-                        </li>
-                    </ul>
-
-                    <div class="tab-content" id="consultaTabsContent">
-                        <!-- Pestaña Consulta Individual -->
-                        <div class="tab-pane fade show active" id="individual" role="tabpanel">
-                            <form id="scrapingForm" method="POST" action="/api/jobs/simit/completo">
-                                <!-- Información Personal -->
-                                <div class="card mb-4">
-                                    <div class="card-header bg-primary text-white">
-                                        <h5 class="mb-0"><i class="fas fa-user"></i> Información de Consulta</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="row">
-                                            <div class="col-md-6 mb-3">
-                                                <label for="nombre" class="form-label">Nombre Completo</label>
-                                                <input type="text" class="form-control" id="nombre" name="nombre" placeholder="...">
-                                            </div>
-                                            
-                                            <div class="col-md-6 mb-3">
-                                                <label for="cedula" class="form-label">Número de Documento *</label>
-                                                <input type="text" class="form-control" id="cedula" name="cedula" required placeholder="...">
-                                            </div>
-                                            <div class="col-md-6 mb-3">
-                                                <label for="cedula" class="form-label">Correo Electrónico *</label>
-                                                <input type="text" class="form-control" id="cedula" name="cedula" required placeholder="email@example.com">
-                                            </div>
-                                        </div>
-                                        <div class="row">
-                                            
-                                            <div class="col-md-6 mb-3">
-                                                <label for="tipo_consulta" class="form-label">Tipo de Consulta *</label>
-                                                <select class="form-select" id="tipo_consulta" name="tipo_consulta" required>
-                                                    <option value="documento">Solo por Documento</option>
-                                                    <option value="correo">Solo por Correo</option>
-                                                    <option value="both">Documento y correo</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Sitios Web Disponibles -->
-                                <div class="card mb-4">
-                                    <div class="card-header bg-success text-white">
-                                        <h5 class="mb-0"><i class="fas fa-globe"></i> Sitios de Consulta Disponibles</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="row" id="sitesContainer">
-                                            <!-- SIMIT - Nuevo -->
-                                            <div class="col-md-6 mb-3">
-                                                <div class="site-card card h-100 new-feature selected" onclick="toggleSite('simit_documento')" style="top: 1.23839px; left: -7.56827px;">
-                                                    <div class="card-body text-center d-flex flex-column justify-content-center">
-                                                        <i class="fas fa-car fa-3x text-danger mb-2"></i>
-                                                        <h6 class="card-title">SIMIT - Multas de Tránsito</h6>
-                                                        <p class="card-text small text-muted">Consulta oficial de multas y comparendos FCM</p>
-                                                        <input type="checkbox" name="sites" value="simit_documento" checked="" style="display: none;">
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <!-- Antecedentes Policía -->
-                                            <div class="col-md-6 mb-3">
-                                                <div class="site-card card h-100" onclick="toggleSite('antecedentes_policia')">
-                                                    <div class="card-body text-center d-flex flex-column justify-content-center">
-                                                        <i class="fas fa-shield-alt fa-3x text-primary mb-2"></i>
-                                                        <h6 class="card-title">Antecedentes Policía</h6>
-                                                        <p class="card-text small text-muted">Consulta de antecedentes penales</p>
-                                                        <input type="checkbox" name="sites" value="antecedentes_policia" style="display: none;">
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            
-                                            <!-- Mi Datacrédito -->
-                                            <div class="col-md-6 mb-3">
-                                                <div class="site-card card h-100" onclick="toggleSite('mi_datacredito')">
-                                                    <div class="card-body text-center d-flex flex-column justify-content-center">
-                                                        <i class="fas fa-credit-card fa-3x text-warning mb-2"></i>
-                                                        <h6 class="card-title">Mi Datacrédito</h6>
-                                                        <p class="card-text small text-muted">Consulta de reportes crediticios</p>
-                                                        <input type="checkbox" name="sites" value="mi_datacredito" style="display: none;">
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Opciones Avanzadas -->
-                                <div class="card mb-4">
-                                    <div class="card-header bg-info text-white">
-                                        <h5 class="mb-0"><i class="fas fa-cogs"></i> Opciones de Consulta</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="row">
-                                            <div class="col-md-6 mb-3">
-                                                <div class="form-check form-switch">
-                                                    <input class="form-check-input" type="checkbox" id="generar_pdf" name="generar_pdf" checked>
-                                                    <label class="form-check-label" for="generar_pdf">
-                                                        <i class="fas fa-file-pdf text-danger"></i> Generar PDF automáticamente
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6 mb-3">
-                                                <div class="form-check form-switch">
-                                                    <input class="form-check-input" type="checkbox" id="headless" name="headless" checked>
-                                                    <label class="form-check-label" for="headless">
-                                                        <i class="fas fa-eye-slash"></i> Ejecutar en segundo plano
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Botones -->
-                                <div class="text-center">
-                                    <button type="submit" class="btn btn-primary btn-lg me-3">
-                                        <i class="fas fa-search"></i> Consultar datos
-                                    </button>
-                                    <button type="button" class="btn btn-outline-secondary btn-lg" onclick="resetForm()">
-                                        <i class="fas fa-undo"></i> Limpiar
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-
-                        <!-- Pestaña Consulta Masiva -->
-                        <div class="tab-pane fade" id="masiva" role="tabpanel">
-                            <div class="card">
-                                <div class="card-header bg-warning text-dark">
-                                    <h5 class="mb-0"><i class="fas fa-file-excel"></i> Consulta Masiva con Excel</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <h6><i class="fas fa-download"></i> 1. Descargar Plantilla</h6>
-                                            <p class="text-muted">Descarga la plantilla Excel según el tipo de consulta:</p>
-                                            <div class="d-grid gap-2">
-                                                <a href="/api/jobs/simit/plantilla/documento" class="btn btn-outline-primary">
-                                                    <i class="fas fa-id-card"></i> Plantilla por Documento
-                                                </a>
-                                               
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <h6><i class="fas fa-upload"></i> 2. Cargar Excel</h6>
-                                            <form id="excelForm" enctype="multipart/form-data">
-                                                <div class="mb-3">
-                                                    <label for="excelFile" class="form-label">Archivo Excel:</label>
-                                                    <input type="file" class="form-control" id="excelFile" accept=".xlsx,.xls" required>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label for="tipoConsultaExcel" class="form-label">Tipo de Consulta:</label>
-                                                    <select class="form-select" id="tipoConsultaExcel">
-                                                        <option value="documento">Por Documento</option>
-                                                        <option value="correo">Por correo</option>
-                                                    </select>
-                                                </div>
-                                                <button type="submit" class="btn btn-primary w-100">
-                                                    <i class="fas fa-play"></i> Procesar Excel
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Loading -->
-                    <div id="loading" class="loading text-center mt-4">
-                        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
-                            <span class="visually-hidden">Consultando...</span>
-                        </div>
-                        <h5 class="mt-3">🔍 Consultando en SIMIT...</h5>
-                        <p class="text-muted">Este proceso puede tomar entre 15-30 segundos</p>
-                        <div class="progress mt-3" style="height: 8px;">
-                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
-                        </div>
-                    </div>
-
-                    <!-- Resultados -->
-                    <div id="results" class="mt-4" style="display: none;">
-                        <h4><i class="fas fa-chart-bar"></i> Resultados de las Consultas</h4>
-                        <div id="resultsContainer"></div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card site-card selected" onclick="toggleSite('antecedente_policia')">
+                    <div class="card-body">
+                        <i class="fas fa-shield-alt"></i>
+                        <h5 class="card-title">Antecedentes</h5>
+                        <p class="card-text">Antecedentes penales</p>
+                        <input type="checkbox" name="sites" value="antecedente_policia" checked hidden>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Convertir placa a mayúsculas automáticamente
-        document.getElementById('placa').addEventListener('input', function(e) {
-            e.target.value = e.target.value.toUpperCase();
-        });
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-search"></i>
+            Consultar
+        </button>
+    </form>
+</div>
 
-        // Validar campos según tipo de consulta
-        document.getElementById('tipo_consulta').addEventListener('change', function() {
-            const tipo = this.value;
-            const cedulaField = document.getElementById('cedula');
-            const placaField = document.getElementById('placa');
-            
-            if (tipo === 'documento') {
-                cedulaField.required = true;
-                placaField.required = false;
-                placaField.value = '';
-            } else if (tipo === 'placa') {
-                placaField.required = true;
-                cedulaField.required = false;
-                cedulaField.value = '';
-            } else { // ambos
-                cedulaField.required = true;
-                placaField.required = true;
-            }
-        });
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.getElementById('correo').addEventListener('input', function(e) {
+        e.target.value = e.target.value.toUpperCase();
+    });
 
-        function toggleSite(siteId) {
-            const card = event.currentTarget;
-            const checkbox = card.querySelector('input[type="checkbox"]');
-            
-            if (checkbox.checked) {
-                card.classList.remove('selected');
-                checkbox.checked = false;
-            } else {
-                card.classList.add('selected');
-                checkbox.checked = true;
-            }
+    document.getElementById('tipo_consulta').addEventListener('change', function() {
+        const tipo = this.value;
+        const cedulaField = document.getElementById('cedula');
+        const correoField = document.getElementById('correo');
+        
+        if (tipo === 'documento') {
+            cedulaField.required = true;
+            correoField.required = false;
+            correoField.value = '';
+            cedulaField.placeholder = 'Número de cédula';
+        } else if (tipo === 'pasaporte') {
+            cedulaField.required = false;
+            correoField.required = true;
+            cedulaField.value = '';
+            cedulaField.placeholder = 'Número de pasaporte';
         }
+    });
 
-        function resetForm() {
-            document.getElementById('scrapingForm').reset();
-            document.querySelectorAll('.site-card').forEach(card => {
-                card.classList.remove('selected');
-                card.querySelector('input[type="checkbox"]').checked = false;
-            });
-            // Reseleccionar SIMIT por defecto
-            document.querySelector('[value="simit_documento"]').checked = true;
-            document.querySelector('[value="simit_documento"]').closest('.site-card').classList.add('selected');
-            
-            document.getElementById('results').style.display = 'none';
-            document.getElementById('loading').style.display = 'none';
-        }
+    function toggleSite(siteId) {
+        const card = event.currentTarget;
+        const checkbox = card.querySelector('input[type="checkbox"]');
+        checkbox.checked = !checkbox.checked;
+        card.classList.toggle('selected', checkbox.checked);
+    }
 
-        // Manejar envío del formulario individual
-        document.getElementById('scrapingForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            const tipoConsulta = formData.get('tipo_consulta');
-            const cedula = formData.get('cedula');
-            const placa = formData.get('placa');
-            
-            // Validar datos requeridos
-            if (tipoConsulta === 'documento' && !cedula) {
-                alert('Debe ingresar el número de documento');
-                return;
-            }
-            if (tipoConsulta === 'placa' && !placa) {
-                alert('Debe ingresar la placa del vehículo');
-                return;
-            }
-            if (tipoConsulta === 'ambos' && (!cedula || !placa)) {
-                alert('Debe ingresar tanto el documento como la placa');
-                return;
-            }
-            
-            // Mostrar loading
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('results').style.display = 'none';
-            
-            // Simular progreso
-            let progress = 0;
-            const progressBar = document.querySelector('.progress-bar');
-            const interval = setInterval(() => {
-                progress += Math.random() * 15;
-                if (progress > 95) progress = 95;
-                progressBar.style.width = progress + '%';
-            }, 1000);
-            
-            // Enviar formulario
-            fetch('/api/jobs/simit/completo', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                clearInterval(interval);
-                progressBar.style.width = '100%';
-                setTimeout(() => {
-                    document.getElementById('loading').style.display = 'none';
-                    showResults(data);
-                }, 500);
-            })
-            .catch(error => {
-                clearInterval(interval);
-                document.getElementById('loading').style.display = 'none';
-                alert('Error al procesar la consulta: ' + error.message);
-            });
-        });
+    document.getElementById('scrapingForm').addEventListener('submit', function(e) {
+        const btn = this.querySelector('button[type="submit"]');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Consultando...';
+        btn.disabled = true;
+    });
+</script>
 
-        // Manejar envío del formulario Excel
-        document.getElementById('excelForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const fileInput = document.getElementById('excelFile');
-            const tipoConsulta = document.getElementById('tipoConsultaExcel').value;
-            
-            if (!fileInput.files[0]) {
-                alert('Debe seleccionar un archivo Excel');
-                return;
-            }
-            
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-            formData.append('tipo_consulta', tipoConsulta);
-            
-            document.getElementById('loading').style.display = 'block';
-            
-            fetch('/api/jobs/simit/excel', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('loading').style.display = 'none';
-                showExcelResults(data);
-            })
-            .catch(error => {
-                document.getElementById('loading').style.display = 'none';
-                alert('Error procesando Excel: ' + error.message);
-            });
-        });
-
-        function showResults(data) {
-            const container = document.getElementById('resultsContainer');
-            container.innerHTML = '';
-
-            if (data.success) {
-                data.resultados.forEach((resultado, index) => {
-                    const resultCard = document.createElement('div');
-                    resultCard.className = `card result-card ${resultado.success ? 'border-success' : 'border-danger'}`;
-                    
-                    let multasHtml = '';
-                    if (resultado.success && resultado.resultados && resultado.resultados.multas_encontradas) {
-                        const multas = resultado.resultados.multas || [];
-                        multasHtml = `
-                            <div class="mt-3">
-                                <h6><i class="fas fa-exclamation-triangle text-warning"></i> Se encontraron ${multas.length} multa(s)</h6>
-                                <ul class="list-group list-group-flush">
-                                    ${multas.slice(0, 3).map(multa => `
-                                        <li class="list-group-item">
-                                            <strong>Descripción:</strong> ${multa.descripcion || 'Ver PDF para detalles'}<br>
-                                            <small class="text-muted">Estado: ${multa.estado || 'Pendiente'}</small>
-                                        </li>
-                                    `).join('')}
-                                </ul>
-                                ${multas.length > 3 ? `<small class="text-muted">... y ${multas.length - 3} más (ver PDF completo)</small>` : ''}
-                            </div>
-                        `;
-                        
-                        if (resultado.resultados.pdf_generado) {
-                            const pdfName = resultado.resultados.pdf_generado.split('/').pop();
-                            multasHtml += `
-                                <div class="mt-3">
-                                    <a href="/api/jobs/simit/pdf/${pdfName}" class="btn btn-danger btn-sm" target="_blank">
-                                        <i class="fas fa-file-pdf"></i> Descargar PDF Completo
-                                    </a>
-                                </div>
-                            `;
-                        }
-                    } else if (resultado.success && resultado.resultados && !resultado.resultados.multas_encontradas) {
-                        multasHtml = `
-                            <div class="alert alert-success mt-3">
-                                <i class="fas fa-check-circle"></i> <strong>¡Excelente!</strong> No se encontraron multas o comparendos pendientes.
-                            </div>
-                        `;
-                    }
-                    
-                    resultCard.innerHTML = `
-                        <div class="card-header ${resultado.success ? 'bg-success' : 'bg-danger'} text-white">
-                            <h6 class="mb-0">
-                                <i class="fas ${resultado.success ? 'fa-check' : 'fa-times'}"></i>
-                                SIMIT - ${resultado.tipo === 'placa' ? 'Consulta por Placa' : 'Consulta por Documento'}
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <p><strong>${resultado.tipo === 'placa' ? 'Placa' : 'Documento'}:</strong> ${resultado.identificador}</p>
-                            ${data.nombre ? `<p><strong>Nombre:</strong> ${data.nombre}</p>` : ''}
-                            ${multasHtml}
-                            ${!resultado.success ? `<div class="alert alert-danger mt-3"><strong>Error:</strong> ${resultado.error}</div>` : ''}
-                            <small class="text-muted">Consulta realizada: ${new Date(data.timestamp * 1000).toLocaleString()}</small>
-                        </div>
-                    `;
-                    container.appendChild(resultCard);
-                });
-            } else {
-                container.innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <strong>Error:</strong> ${data.error}
-                    </div>
-                `;
-            }
-
-            document.getElementById('results').style.display = 'block';
-        }
-
-        function showExcelResults(data) {
-            const container = document.getElementById('resultsContainer');
-            container.innerHTML = '';
-
-            if (data.success) {
-                container.innerHTML = `
-                    <div class="card border-success">
-                        <div class="card-header bg-success text-white">
-                            <h5 class="mb-0"><i class="fas fa-check"></i> Procesamiento Excel Completado</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row text-center">
-                                <div class="col-md-3">
-                                    <h4 class="text-primary">${data.total_procesados}</h4>
-                                    <small>Total Procesados</small>
-                                </div>
-                                <div class="col-md-3">
-                                    <h4 class="text-success">${data.total_con_multas}</h4>
-                                    <small>Con Multas</small>
-                                </div>
-                                <div class="col-md-3">
-                                    <h4 class="text-info">${data.total_sin_multas}</h4>
-                                    <small>Sin Multas</small>
-                                </div>
-                                <div class="col-md-3">
-                                    <h4 class="text-warning">${data.total_errores}</h4>
-                                    <small>Con Errores</small>
-                                </div>
-                            </div>
-                            ${data.archivo_resultados ? `
-                                <div class="mt-3 text-center">
-                                    <a href="${data.archivo_resultados}" class="btn btn-primary">
-                                        <i class="fas fa-download"></i> Descargar Excel con Resultados
-                                    </a>
-                                </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                `;
-            } else {
-                container.innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <strong>Error:</strong> ${data.error}
-                    </div>
-                `;
-            }
-
-            document.getElementById('results').style.display = 'block';
-        }
-    </script>
 </body>
 </html>
