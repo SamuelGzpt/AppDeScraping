@@ -78,8 +78,4 @@ C:\USERS\USUARIO\DOCUMENTS\APPSCRAPING
 
 ## Contribuir
 
-Si encuentras bugs o tienes ideas para mejorar, siéntete libre de abrir un issue o hacer un pull request. Todo feedback es bienvenido.
-
-## Disclaimer
-
-Esta herramienta es para uso educativo y personal. Respeta los términos de uso de los sitios web que consulta. No me hago responsable del mal uso que le puedas dar.
+Si encuentras bugs o tienes ideas para mejorar, dejamelo saber.
