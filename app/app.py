@@ -4,6 +4,7 @@ from scraping_policia import consultar_policia
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import io
+import textwrap
 
 app = Flask(__name__)
 app.secret_key = "supersecreto"  # Necesario para usar session
@@ -44,12 +45,50 @@ def scraping():
     )
 
 
+def extraer_texto_limpio(resultado):
+    """Extrae el texto limpio del resultado, sin estructura de diccionario"""
+    if isinstance(resultado, dict):
+        if 'texto' in resultado:
+            return resultado['texto']
+        elif 'error' in resultado:
+            return f"Error: {resultado['error']}"
+        else:
+            return str(resultado)
+    else:
+        return str(resultado)
+
+
+def dibujar_texto_multilinea(canvas_obj, texto, x, y, max_width=500, font_size=10):
+    """Dibuja texto en múltiples líneas si es necesario"""
+    canvas_obj.setFont("Helvetica", font_size)
+    
+    # Calcular aproximadamente cuántos caracteres caben por línea
+    chars_per_line = max_width // (font_size * 0.6)  # Aproximación
+    
+    # Dividir el texto en líneas
+    lineas = textwrap.wrap(texto, width=int(chars_per_line))
+    
+    # Dibujar cada línea
+    line_height = font_size + 4  # Espaciado entre líneas
+    current_y = y
+    
+    for linea in lineas:
+        canvas_obj.drawString(x, current_y, linea)
+        current_y -= line_height
+    
+    return current_y  # Retorna la posición Y final
+
+
 @app.route("/descargar_pdf")
 def descargar_pdf():
     nombre = session.get("nombre", "No especificado")
     cedula = session.get("cedula", "Sin datos")
     simit_result = session.get("simit_result", "Sin datos")
     policia_result = session.get("policia_result", "Sin datos")
+
+    # Extraer texto limpio de los resultados
+    texto_simit = extraer_texto_limpio(simit_result)
+    texto_policia = extraer_texto_limpio(policia_result)
 
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer, pagesize=letter)
@@ -63,25 +102,32 @@ def descargar_pdf():
     p.setFont("Helvetica", 12)
     p.drawString(50, height - 80, f"Nombre: {nombre}")
 
-    #Cedula
+    # Cédula
     p.setFont("Helvetica", 12)
-    p.drawString(50, height - 100, f"Cedula: {cedula}")
+    p.drawString(50, height - 100, f"Cédula: {cedula}")
 
     # SIMIT
     p.setFont("Helvetica-Bold", 14)
-    p.drawString(50, height - 120, "SIMIT:")
-    p.setFont("Helvetica", 10)
-    text_obj = p.beginText(50, height - 140)
-    text_obj.textLines(str(simit_result))
-    p.drawText(text_obj)
+    p.drawString(50, height - 130, "SIMIT:")
+    
+    # Dibujar texto SIMIT en múltiples líneas
+    y_position = dibujar_texto_multilinea(p, texto_simit, 50, height - 150, max_width=500, font_size=10)
+    
+    # Espacio entre secciones
+    y_position -= 30
 
     # Antecedentes Policía
     p.setFont("Helvetica-Bold", 14)
-    p.drawString(50, height - 300, "Antecedentes Policía:")
-    p.setFont("Helvetica", 10)
-    text_obj = p.beginText(50, height - 320)
-    text_obj.textLines(str(policia_result))
-    p.drawText(text_obj)
+    p.drawString(50, y_position, "Antecedentes Policía:")
+    
+    # Dibujar texto Policía en múltiples líneas
+    y_position -= 20
+    final_y = dibujar_texto_multilinea(p, texto_policia, 50, y_position, max_width=500, font_size=10)
+    
+    # Si el contenido es muy largo y se sale de la página, crear nueva página
+    if final_y < 100:
+        p.showPage()
+        # Si quieres agregar contenido adicional en la nueva página, hazlo aquí
 
     p.showPage()
     p.save()
@@ -90,7 +136,7 @@ def descargar_pdf():
     return send_file(
         buffer,
         as_attachment=True,
-        download_name=f"consulta_{nombre}.pdf",
+        download_name=f"consulta_{nombre.replace(' ', '_')}.pdf",
         mimetype="application/pdf"
     )
 
