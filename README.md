@@ -75,6 +75,8 @@ C:\USERS\USUARIO\DOCUMENTS\APPSCRAPING
 
 **Error de dependencias**: Revisa que instalaste todo con `pip install -r requirements.txt`.
 
+**Vision de la web**: Puedes ajustar si deseas ver las paginas donde se hace el scraping  solo modificando (scraping_simit,Scraping_policia) descomentando la linea correspondiente.
+
 ## Contribuir
 
 Si encuentras bugs o tienes ideas para mejorar, dejamelo saber.
