@@ -23,32 +23,32 @@ def consultar_policia(cedula):
     try:
         driver.get("https://antecedentes.policia.gov.co:7005/WebJudicial/index.xhtml")
 
-        # 1️⃣ Seleccionar aceptar términos
+        # 1️ Seleccionar aceptar términos
         aceptar_radio = wait.until(EC.element_to_be_clickable((By.ID, "aceptaOption:0")))
         driver.execute_script("arguments[0].click();", aceptar_radio)
 
-        # 2️⃣ Esperar a que el botón 'continuarBtn' se habilite
+        # 2️ Esperar a que el botón 'continuarBtn' se habilite
         wait.until(lambda d: d.find_element(By.ID, "continuarBtn").is_enabled())
         continuar_btn = driver.find_element(By.ID, "continuarBtn")
         driver.execute_script("arguments[0].click();", continuar_btn)
 
-        # 3️⃣ Esperar campo de cédula
+        # 3️ Esperar campo de cédula
         campo_cedula = wait.until(EC.element_to_be_clickable((By.ID, "form:cedula")))
         campo_cedula.clear()
         campo_cedula.send_keys(cedula)
 
-        # 4️⃣ Pausa para resolver el CAPTCHA manualmente
+        # 4️ Pausa para resolver el CAPTCHA manualmente
         print("\n[INFO] Resuelve el CAPTCHA manualmente en la ventana del navegador.")
         input("Presiona ENTER aquí cuando hayas resuelto el CAPTCHA...\n")
 
-        # 5️⃣ Click en 'Enviar' (por si no se envía solo)
+        # 5️ Click en 'Enviar' (por si no se envía solo)
         try:
             enviar_btn = wait.until(EC.element_to_be_clickable((By.ID, "continuarBtn")))
             driver.execute_script("arguments[0].click();", enviar_btn)
         except TimeoutException:
             pass  # en algunos casos la página carga automáticamente después del captcha
 
-        # 6️⃣ Esperar y obtener resultado
+        # 6️ Esperar y obtener resultado
         resultado_el = wait.until(EC.visibility_of_element_located((By.ID, "form:j_idt8_content")))
         texto = resultado_el.text.strip()
 

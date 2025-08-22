@@ -23,7 +23,7 @@ def consultar_simit(cedula):
     try:
         driver.get("https://www.fcm.org.co/simit/#/home-public")
 
-        # 🔹 CERRAR MODAL SI APARECE
+        #  CERRAR MODAL SI APARECE
         try:
             # Esperar más tiempo para que el modal aparezca
             time.sleep(5)
@@ -101,12 +101,12 @@ def consultar_simit(cedula):
         except Exception as e:
             print(f"Error general al manejar modal: {e}")
 
-        # 1️⃣ Esperar campo de búsqueda y escribir la cédula
+        # 1️ Esperar campo de búsqueda y escribir la cédula
         campo_busqueda = wait.until(EC.element_to_be_clickable((By.ID, "txtBusqueda")))
         campo_busqueda.clear()
         campo_busqueda.send_keys(cedula)
 
-        # 2️⃣ Buscar y hacer clic en el botón de búsqueda específico
+        # 2️ Buscar y hacer clic en el botón de búsqueda específico
         try:
             # Buscar el botón por el ícono bx-search
             boton_buscar_selectors = [
@@ -146,7 +146,7 @@ def consultar_simit(cedula):
             # Fallback al método original
             campo_busqueda.submit()
 
-        # 3️⃣ Esperar a que aparezca el texto de resultado
+        # 3️ Esperar a que aparezca el texto de resultado
         resultado_div = wait.until(EC.visibility_of_element_located((
             By.CSS_SELECTOR,
             "div.col-lg-6.text-lg-left.text-center.px-lg-5.px-3.mt-lg-0.mt-md-5.mt-3"
