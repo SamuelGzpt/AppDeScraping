@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, session, send_file
 from scraping_simit import consultar_simit
-from scraping_policia import consultar_policia
+from scraping_policia import consultar_policia  # Importar la versión mejorada
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import io
@@ -21,19 +21,75 @@ def scraping():
     cedula = request.form.get("cedula", "").strip()
     correo = request.form.get("correo", "")
 
+    print(f"[INFO] Iniciando consulta para {nombre} - Cédula: {cedula}")
+
+    # Consultar SIMIT
+    try:
+        print("[INFO] Consultando SIMIT...")
+        simit_result = consultar_simit(cedula) or "No se encontraron datos en SIMIT"
+        print("[✓] SIMIT completado")
+    except Exception as e:
+        print(f"[❌] Error SIMIT: {e}")
+        simit_result = f"Error al consultar SIMIT: {e}"
+
+    # Consultar Policía con método mejorado
+    try:
+        print("[INFO] Consultando Policía (método directo)...")
+        policia_result = consultar_policia(cedula) or "No se encontraron datos en Policía"
+        print("[✓] Policía completado")
+    except Exception as e:
+        print(f"[❌] Error Policía: {e}")
+        policia_result = f"Error al consultar Policía: {e}"
+
+    # Guardar en sesión para descargar PDF después
+    session["nombre"] = nombre
+    session["cedula"] = cedula
+    session["correo"] = correo
+    session["simit_result"] = simit_result
+    session["policia_result"] = policia_result
+
+    print("[✓] Consulta completada, mostrando resultados")
+
+    return render_template(
+        "success.html",
+        nombre=nombre,
+        simit_result=simit_result,
+        policia_result=policia_result
+    )
+
+
+@app.route("/consulta_con_token", methods=["POST"])
+def consulta_con_token():
+    """
+    Ruta para consulta con token específico del reCAPTCHA
+    """
+    nombre = request.form.get("Nombre", "No especificado")
+    cedula = request.form.get("cedula", "").strip()
+    correo = request.form.get("correo", "")
+    recaptcha_token = request.form.get("recaptcha_token", "")
+
+    print(f"[INFO] Iniciando consulta con token para {nombre} - Cédula: {cedula}")
+
+    # Importar función específica
+    from scraping_policia import consultar_policia_token_especifico
+    
     try:
         simit_result = consultar_simit(cedula) or "No se encontraron datos en SIMIT"
     except Exception as e:
         simit_result = f"Error al consultar SIMIT: {e}"
 
     try:
-        policia_result = consultar_policia(cedula) or "No se encontraron datos en Policía"
+        if recaptcha_token:
+            policia_result = consultar_policia_token_especifico(cedula, recaptcha_token)
+        else:
+            policia_result = consultar_policia(cedula)
     except Exception as e:
         policia_result = f"Error al consultar Policía: {e}"
 
-    # Guardar en sesión para descargar PDF después
+    # Guardar en sesión
     session["nombre"] = nombre
     session["cedula"] = cedula
+    session["correo"] = correo
     session["simit_result"] = simit_result
     session["policia_result"] = policia_result
 
@@ -83,6 +139,7 @@ def dibujar_texto_multilinea(canvas_obj, texto, x, y, max_width=500, font_size=1
 def descargar_pdf():
     nombre = session.get("nombre", "No especificado")
     cedula = session.get("cedula", "Sin datos")
+    correo = session.get("correo", "Sin correo")
     simit_result = session.get("simit_result", "Sin datos")
     policia_result = session.get("policia_result", "Sin datos")
 
@@ -98,20 +155,22 @@ def descargar_pdf():
     p.setFont("Helvetica-Bold", 16)
     p.drawString(180, height - 50, "Resultados de la Consulta")
 
-    # Nombre
+    # Información personal
     p.setFont("Helvetica", 12)
     p.drawString(50, height - 80, f"Nombre: {nombre}")
-
-    # Cédula
-    p.setFont("Helvetica", 12)
     p.drawString(50, height - 100, f"Cédula: {cedula}")
+    if correo != "Sin correo":
+        p.drawString(50, height - 120, f"Correo: {correo}")
+        y_start = height - 150
+    else:
+        y_start = height - 130
 
     # SIMIT
     p.setFont("Helvetica-Bold", 14)
-    p.drawString(50, height - 130, "SIMIT:")
+    p.drawString(50, y_start, "SIMIT:")
     
     # Dibujar texto SIMIT en múltiples líneas
-    y_position = dibujar_texto_multilinea(p, texto_simit, 50, height - 150, max_width=500, font_size=10)
+    y_position = dibujar_texto_multilinea(p, texto_simit, 50, y_start - 20, max_width=500, font_size=10)
     
     # Espacio entre secciones
     y_position -= 30
@@ -127,7 +186,6 @@ def descargar_pdf():
     # Si el contenido es muy largo y se sale de la página, crear nueva página
     if final_y < 100:
         p.showPage()
-        # Si quieres agregar contenido adicional en la nueva página, hazlo aquí
 
     p.showPage()
     p.save()
