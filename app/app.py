@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, session, send_file, jsonify
 from scraping_simit import consultar_simit
-from scraping_policia import consultar_policia  # Versión con bypass
+from scraping_policia import consultar_policia  # Versión limpia con audio solver
 from scraping_policia import consultar_policia_con_audio_solver  # Nueva función
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
@@ -28,10 +28,10 @@ def scraping():
     nombre = request.form.get("Nombre", "No especificado")
     cedula = request.form.get("cedula", "").strip()
     correo = request.form.get("correo", "")
-    metodo_bypass = request.form.get("metodo_bypass", "normal")
+    metodo_bypass = request.form.get("metodo_bypass", "audio_captcha")  # Por defecto audio
 
     print(f"[INFO] {datetime.now()} - Iniciando consulta para {nombre} - Cédula: {cedula}")
-    print(f"[INFO] Método de bypass seleccionado: {metodo_bypass}")
+    print(f"[INFO] Método seleccionado: {metodo_bypass}")
 
     # Inicializar resultados
     simit_result = None
@@ -47,36 +47,19 @@ def scraping():
         print(f"[DEBUG] Stack trace SIMIT: {traceback.format_exc()}")
         simit_result = f"Error al consultar SIMIT: {str(e)}"
 
-    # Consultar Policía con bypass de CAPTCHA según método seleccionado
+    # Consultar Policía con Audio CAPTCHA Solver (método único)
     try:
-        print(f"[INFO] Consultando Policía con bypass de CAPTCHA (método: {metodo_bypass})...")
+        print(f"[INFO] Consultando Policía con Audio CAPTCHA Solver...")
         
-        if metodo_bypass == "bypass_simple":
-            from scraping_policia import consultar_policia_bypass_captcha
-            policia_result = consultar_policia_bypass_captcha(cedula)
-        elif metodo_bypass == "bypass_agresivo":
-            from scraping_policia import consultar_policia_bypass_avanzado
-            policia_result = consultar_policia_bypass_avanzado(cedula)
-        elif metodo_bypass == "requests_directo":
-            from scraping_policia import consultar_policia_request_directo
-            policia_result = consultar_policia_request_directo(cedula)
-        elif metodo_bypass == "solver_avanzado":
-            from captcha_solver import consultar_policia_con_solver
-            policia_result = consultar_policia_con_solver(cedula)
-        elif metodo_bypass == "audio_captcha":
-            # NUEVO: Resolver CAPTCHA de audio
-            policia_result = consultar_policia_con_audio_solver(cedula)
-        elif metodo_bypass == "image_solver":
-            from captcha_image_solver import consultar_policia_con_image_solver
-            policia_result = consultar_policia_con_image_solver(cedula)
-        else:
-            # Método automático (normal) - usa múltiples estrategias
-            policia_result = consultar_policia(cedula)
+        # Usar siempre el método de audio CAPTCHA
+        policia_result = consultar_policia_con_audio_solver(cedula)
         
         if not policia_result:
             policia_result = "No se encontraron datos en Policía"
-        
-        print("[✓] Policía completado con bypass exitoso")
+        elif policia_result.get("status") == "error":
+            print(f"[WARNING] Error en consulta Policía: {policia_result.get('error')}")
+        else:
+            print("[✓] Policía completado con Audio CAPTCHA Solver exitoso")
         
     except Exception as e:
         print(f"[❌] Error Policía: {str(e)}")
@@ -89,7 +72,7 @@ def scraping():
     session["correo"] = correo
     session["simit_result"] = simit_result
     session["policia_result"] = policia_result
-    session["metodo_usado"] = metodo_bypass
+    session["metodo_usado"] = "audio_captcha"  # Siempre audio
     session["fecha_consulta"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     print(f"[✓] {datetime.now()} - Consulta completada, mostrando resultados")
@@ -100,7 +83,7 @@ def scraping():
         cedula=cedula,
         simit_result=simit_result,
         policia_result=policia_result,
-        metodo_usado=metodo_bypass
+        metodo_usado="audio_captcha"
     )
 
 
@@ -149,28 +132,23 @@ def test_audio_captcha():
 def consulta_con_token():
     """
     Ruta para consulta con token específico del reCAPTCHA
-    (Mantenida por compatibilidad)
+    (Redirige al método de audio por simplicidad)
     """
     nombre = request.form.get("Nombre", "No especificado")
     cedula = request.form.get("cedula", "").strip()
     correo = request.form.get("correo", "")
     recaptcha_token = request.form.get("recaptcha_token", "")
 
-    print(f"[INFO] Iniciando consulta con token para {nombre} - Cédula: {cedula}")
+    print(f"[INFO] Iniciando consulta con audio solver para {nombre} - Cédula: {cedula}")
 
-    # Importar función específica
-    from scraping_policia import consultar_policia_token_especifico
-    
     try:
         simit_result = consultar_simit(cedula) or "No se encontraron datos en SIMIT"
     except Exception as e:
         simit_result = f"Error al consultar SIMIT: {e}"
 
     try:
-        if recaptcha_token:
-            policia_result = consultar_policia_token_especifico(cedula, recaptcha_token)
-        else:
-            policia_result = consultar_policia(cedula)
+        # Usar siempre el audio solver
+        policia_result = consultar_policia_con_audio_solver(cedula)
     except Exception as e:
         policia_result = f"Error al consultar Policía: {e}"
 
@@ -180,16 +158,112 @@ def consulta_con_token():
     session["correo"] = correo
     session["simit_result"] = simit_result
     session["policia_result"] = policia_result
+    session["metodo_usado"] = "audio_captcha"
 
     return render_template(
         "success.html",
         nombre=nombre,
+        cedula=cedula,
         simit_result=simit_result,
-        policia_result=policia_result
+        policia_result=policia_result,
+        metodo_usado="audio_captcha"
     )
 
 
-@app.route("/")
-def index():
-    """Página principal con formulario de consulta"""
-    return render_template("index.html")
+@app.route("/download_pdf")
+def download_pdf():
+    """
+    Genera y descarga PDF con los resultados de la consulta
+    """
+    try:
+        # Obtener datos de la sesión
+        nombre = session.get("nombre", "No especificado")
+        cedula = session.get("cedula", "")
+        correo = session.get("correo", "")
+        simit_result = session.get("simit_result", "No disponible")
+        policia_result = session.get("policia_result", "No disponible")
+        fecha_consulta = session.get("fecha_consulta", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        
+        # Crear PDF en memoria
+        buffer = io.BytesIO()
+        c = canvas.Canvas(buffer, pagesize=letter)
+        width, height = letter
+        
+        # Título
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(50, height - 50, "CONSULTA DE ANTECEDENTES")
+        
+        # Información personal
+        c.setFont("Helvetica", 12)
+        y_position = height - 100
+        
+        c.drawString(50, y_position, f"Nombre: {nombre}")
+        y_position -= 20
+        c.drawString(50, y_position, f"Cédula: {cedula}")
+        y_position -= 20
+        c.drawString(50, y_position, f"Correo: {correo}")
+        y_position -= 20
+        c.drawString(50, y_position, f"Fecha de consulta: {fecha_consulta}")
+        y_position -= 40
+        
+        # Resultados SIMIT
+        c.setFont("Helvetica-Bold", 14)
+        c.drawString(50, y_position, "RESULTADOS SIMIT:")
+        y_position -= 20
+        
+        c.setFont("Helvetica", 10)
+        simit_text = str(simit_result)
+        lines = textwrap.wrap(simit_text, width=80)
+        for line in lines:
+            c.drawString(50, y_position, line)
+            y_position -= 15
+            if y_position < 100:
+                c.showPage()
+                y_position = height - 50
+        
+        y_position -= 20
+        
+        # Resultados Policía
+        c.setFont("Helvetica-Bold", 14)
+        c.drawString(50, y_position, "RESULTADOS POLICÍA:")
+        y_position -= 20
+        
+        c.setFont("Helvetica", 10)
+        if isinstance(policia_result, dict):
+            policia_text = policia_result.get("texto", str(policia_result))
+        else:
+            policia_text = str(policia_result)
+            
+        lines = textwrap.wrap(policia_text, width=80)
+        for line in lines:
+            if y_position < 100:
+                c.showPage()
+                y_position = height - 50
+            c.drawString(50, y_position, line)
+            y_position -= 15
+        
+        # Método usado
+        y_position -= 20
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(50, y_position, "Método utilizado: Audio CAPTCHA Solver")
+        
+        c.save()
+        buffer.seek(0)
+        
+        return send_file(
+            buffer,
+            as_attachment=True,
+            download_name=f"antecedentes_{cedula}_{fecha_consulta.replace(':', '-').replace(' ', '_')}.pdf",
+            mimetype='application/pdf'
+        )
+        
+    except Exception as e:
+        print(f"[ERROR] Error generando PDF: {e}")
+        return jsonify({"error": f"Error generando PDF: {str(e)}"}), 500
+
+
+if __name__ == "__main__":
+    print("🚀 Iniciando servidor Flask...")
+    print("🎵 Sistema de Audio CAPTCHA Solver activado")
+    print("📱 Accede a: http://localhost:5000")
+    app.run(debug=True, host="0.0.0.0", port=5000)
