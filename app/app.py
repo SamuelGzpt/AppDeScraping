@@ -174,7 +174,7 @@ def download_pdf():
         nombre = session.get("nombre", "No especificado")
         cedula = session.get("cedula", "")
         correo = session.get("correo", "")
-        simit_result = session.get("consultar_simit", "No disponible")
+        simit_result = session.get("texto", "No disponible")
         policia_result = session.get("policia_result", "No disponible")
         simit_status = session.get("simit_status", "unknown")
         policia_status = session.get("policia_status", "unknown")

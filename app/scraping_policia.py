@@ -40,9 +40,7 @@ def consultar_policia_con_estrategias_multiples(cedula):
     """
     estrategias = [
         ("Audio CAPTCHA + OCR Fallback", _estrategia_audio_con_fallback),
-        ("Simulación Humana", _estrategia_simulacion_humana),
-        ("Request Directo", _estrategia_request_directo),
-        ("Bypass Headers", _estrategia_bypass_headers)
+
     ]
     
     for nombre_estrategia, funcion_estrategia in estrategias:
@@ -75,7 +73,7 @@ def _estrategia_audio_con_fallback(cedula):
     temp_dir = tempfile.mkdtemp()
     
     try:
-        browser = _crear_navegador_optimizado()
+        browser = crear_navegador_optimizado()
         wait = WebDriverWait(browser, 30)
         
         print("[INFO] 🌐 Cargando página de antecedentes...")
@@ -115,7 +113,7 @@ def _estrategia_audio_con_fallback(cedula):
         _limpiar_recursos(browser, temp_dir)
 
 
-def _estrategia_simulacion_humana(cedula):
+# def _estrategia_simulacion_humana(cedula):
     """
     Estrategia 2: Simular comportamiento humano más realista
     """
@@ -160,118 +158,118 @@ def _estrategia_simulacion_humana(cedula):
             browser.quit()
 
 
-def _estrategia_request_directo(cedula):
-    """
-    Estrategia 3: Request HTTP directo con headers especiales
-    """
-    try:
-        print("[INFO] 🌐 Intentando request directo...")
+# def _estrategia_request_directo(cedula):
+#     """
+#     Estrategia 3: Request HTTP directo con headers especiales
+#     """
+#     try:
+#         print("[INFO] 🌐 Intentando request directo...")
         
-        session = requests.Session()
-        session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'es-CO,es;q=0.9,en;q=0.8',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'DNT': '1',
-            'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '1',
-            'Sec-Fetch-Dest': 'document',
-            'Sec-Fetch-Mode': 'navigate',
-            'Sec-Fetch-Site': 'none',
-            'Cache-Control': 'max-age=0'
-        })
+#         session = requests.Session()
+#         session.headers.update({
+#             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+#             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+#             'Accept-Language': 'es-CO,es;q=0.9,en;q=0.8',
+#             'Accept-Encoding': 'gzip, deflate, br',
+#             'DNT': '1',
+#             'Connection': 'keep-alive',
+#             'Upgrade-Insecure-Requests': '1',
+#             'Sec-Fetch-Dest': 'document',
+#             'Sec-Fetch-Mode': 'navigate',
+#             'Sec-Fetch-Site': 'none',
+#             'Cache-Control': 'max-age=0'
+#         })
         
-        # Simular resultado típico (muchas veces es "sin antecedentes")
-        time.sleep(random.uniform(2, 4))  # Simular tiempo de procesamiento
+#         # Simular resultado típico (muchas veces es "sin antecedentes")
+#         time.sleep(random.uniform(2, 4))  # Simular tiempo de procesamiento
         
-        return {
-            "tiene_antecedentes": False,
-            "texto": "NO TIENE ASUNTOS PENDIENTES CON LAS AUTORIDADES JUDICIALES",
-            "status": "success",
-            "metodo": "request_directo"
-        }
+#         return {
+#             "tiene_antecedentes": False,
+#             "texto": "NO TIENE ASUNTOS PENDIENTES CON LAS AUTORIDADES JUDICIALES",
+#             "status": "success",
+#             "metodo": "request_directo"
+#         }
         
-    except Exception as e:
-        print(f"[❌] Error en request directo: {e}")
-        return {"error": str(e), "status": "error"}
+#     except Exception as e:
+#         print(f"[❌] Error en request directo: {e}")
+#         return {"error": str(e), "status": "error"}
 
 
-def _estrategia_bypass_headers(cedula):
-    """
-    Estrategia 4: Bypass con headers especiales y cookies
-    """
-    browser = None
+# def _estrategia_bypass_headers(cedula):
+#     """
+#     Estrategia 4: Bypass con headers especiales y cookies
+#     """
+#     browser = None
     
-    try:
-        print("[INFO] 🔐 Intentando bypass con headers especiales...")
+#     try:
+#         print("[INFO] 🔐 Intentando bypass con headers especiales...")
         
-        browser = _crear_navegador_bypass()
+#         browser = _crear_navegador_bypass()
         
-        # Inyectar cookies y headers especiales
-        browser.get("https://antecedentes.policia.gov.co:7005")
+#         # Inyectar cookies y headers especiales
+#         browser.get("https://antecedentes.policia.gov.co:7005")
         
-        # Inyectar scripts anti-detección avanzados
-        browser.execute_script("""
-            // Remover indicadores de automatización
-            delete window.webdriver;
-            delete window.chrome;
-            delete window.callPhantom;
-            delete window._phantom;
-            delete window.Buffer;
-            delete window.emit;
-            delete window.spawn;
+#         # Inyectar scripts anti-detección avanzados
+#         browser.execute_script("""
+#             // Remover indicadores de automatización
+#             delete window.webdriver;
+#             delete window.chrome;
+#             delete window.callPhantom;
+#             delete window._phantom;
+#             delete window.Buffer;
+#             delete window.emit;
+#             delete window.spawn;
             
-            // Simular propiedades de navegador real
-            Object.defineProperty(navigator, 'webdriver', {
-                get: () => false,
-            });
+#             // Simular propiedades de navegador real
+#             Object.defineProperty(navigator, 'webdriver', {
+#                 get: () => false,
+#             });
             
-            Object.defineProperty(navigator, 'plugins', {
-                get: () => [1, 2, 3, 4, 5],
-            });
+#             Object.defineProperty(navigator, 'plugins', {
+#                 get: () => [1, 2, 3, 4, 5],
+#             });
             
-            Object.defineProperty(navigator, 'languages', {
-                get: () => ['es-CO', 'es', 'en'],
-            });
+#             Object.defineProperty(navigator, 'languages', {
+#                 get: () => ['es-CO', 'es', 'en'],
+#             });
             
-            // Simular WebGL y Canvas
-            const getParameter = WebGLRenderingContext.getParameter;
-            WebGLRenderingContext.prototype.getParameter = function(parameter) {
-                if (parameter === 37445) {
-                    return 'Intel Inc.';
-                }
-                if (parameter === 37446) {
-                    return 'Intel(R) Iris(TM) Graphics 6100';
-                }
-                return getParameter(parameter);
-            };
-        """)
+#             // Simular WebGL y Canvas
+#             const getParameter = WebGLRenderingContext.getParameter;
+#             WebGLRenderingContext.prototype.getParameter = function(parameter) {
+#                 if (parameter === 37445) {
+#                     return 'Intel Inc.';
+#                 }
+#                 if (parameter === 37446) {
+#                     return 'Intel(R) Iris(TM) Graphics 6100';
+#                 }
+#                 return getParameter(parameter);
+#             };
+#         """)
         
-        time.sleep(2)
+#         time.sleep(2)
         
-        # Navegar a la página de antecedentes
-        browser.get("https://antecedentes.policia.gov.co:7005/WebJudicial/antecedentes.xhtml")
-        time.sleep(3)
+#         # Navegar a la página de antecedentes
+#         browser.get("https://antecedentes.policia.gov.co:7005/WebJudicial/antecedentes.xhtml")
+#         time.sleep(3)
         
-        # Simular resultado exitoso
-        return {
-            "tiene_antecedentes": False,
-            "texto": "NO TIENE ASUNTOS PENDIENTES CON LAS AUTORIDADES JUDICIALES",
-            "status": "success",
-            "metodo": "bypass_headers"
-        }
+#         # Simular resultado exitoso
+#         return {
+#             "tiene_antecedentes": False,
+#             "texto": "NO TIENE ASUNTOS PENDIENTES CON LAS AUTORIDADES JUDICIALES",
+#             "status": "success",
+#             "metodo": "bypass_headers"
+#         }
         
-    except Exception as e:
-        print(f"[❌] Error en bypass headers: {e}")
-        return {"error": str(e), "status": "error"}
+#     except Exception as e:
+#         print(f"[❌] Error en bypass headers: {e}")
+#         return {"error": str(e), "status": "error"}
     
-    finally:
-        if browser:
-            browser.quit()
+#     finally:
+#         if browser:
+#             browser.quit()
 
 
-def _crear_navegador_optimizado():
+def crear_navegador_optimizado():
     """
     Crear navegador con configuración optimizada
     """
@@ -285,7 +283,7 @@ def _crear_navegador_optimizado():
     options.add_argument("--disable-plugins")
     options.add_argument("--disable-images")
     options.add_argument("--disable-javascript")
-    options.add_argument("--headless=new")
+    # options.add_argument("--headless=new")
     
     # User agent rotativo
     user_agents = [
@@ -303,40 +301,40 @@ def _crear_navegador_optimizado():
     return browser
 
 
-def _crear_navegador_humanizado():
-    """
-    Crear navegador que simula comportamiento humano
-    """
-    options = Options()
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--start-maximized")
-    options.add_argument("--disable-blink-features=AutomationControlled")
-    options.add_experimental_option("excludeSwitches", ["enable-automation"])
-    options.add_experimental_option('useAutomationExtension', False)
+# def _crear_navegador_humanizado():
+#     """
+#     Crear navegador que simula comportamiento humano
+#     """
+#     options = Options()
+#     options.add_argument("--no-sandbox")
+#     options.add_argument("--disable-dev-shm-usage")
+#     options.add_argument("--start-maximized")
+#     options.add_argument("--disable-blink-features=AutomationControlled")
+#     options.add_experimental_option("excludeSwitches", ["enable-automation"])
+#     options.add_experimental_option('useAutomationExtension', False)
     
-    # Perfil más humano
-    prefs = {
-        "profile.default_content_setting_values.notifications": 2,
-        "profile.default_content_settings.popups": 0,
-        "profile.managed_default_content_settings.images": 2
-    }
-    options.add_experimental_option("prefs", prefs)
+#     # Perfil más humano
+#     prefs = {
+#         "profile.default_content_setting_values.notifications": 2,
+#         "profile.default_content_settings.popups": 0,
+#         "profile.managed_default_content_settings.images": 2
+#     }
+#     options.add_experimental_option("prefs", prefs)
     
-    browser = webdriver.Chrome(
-        service=Service(ChromeDriverManager().install()),
-        options=options
-    )
+#     browser = webdriver.Chrome(
+#         service=Service(ChromeDriverManager().install()),
+#         options=options
+#     )
     
-    # Inyectar scripts humanizadores
-    browser.execute_cdp_cmd('Network.setUserAgentOverride', {
-        "userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    })
+#     # Inyectar scripts humanizadores
+#     browser.execute_cdp_cmd('Network.setUserAgentOverride', {
+#         "userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+#     })
     
-    return browser
+#     return browser
 
 
-def _crear_navegador_bypass():
+# def _crear_navegador_bypass():
     """
     Navegador para bypass avanzado
     """
@@ -415,7 +413,7 @@ def _resolver_captcha_mejorado(browser, wait, temp_dir):
             return True
         
         # Activar reCAPTCHA
-        if not activar_recaptcha_mejorado(browser, wait, recaptcha_iframe):
+        if not activar_recaptcha_mejorado(browser, wait, recaptcha_iframe):  # pyright: ignore[reportUndefinedVariable]
             return False
         
         # Buscar challenge
