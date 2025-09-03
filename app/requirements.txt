@@ -1,3 +1,4 @@
+# Dependencias existentes
 flask
 selenium
 webdriver-manager
@@ -5,3 +6,18 @@ reportlab
 requests
 beautifulsoup4
 lxml
+
+# Nuevas dependencias para resolver CAPTCHA de audio
+SpeechRecognition
+pydub
+urllib3
+
+# Dependencias opcionales para mejor reconocimiento de audio
+# pyaudio  # Solo si necesitas micrófono
+# google-cloud-speech  # Para reconocimiento más preciso (requiere API key)
+
+# Para manejo de archivos de audio
+mutagen
+
+# Para descarga de archivos
+wget
