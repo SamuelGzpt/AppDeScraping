@@ -171,6 +171,7 @@ def consulta_con_token():
 
 
 @app.route("/download_pdf")
+@app.route("/descargar_pdf")  # Alias para compatibilidad
 def download_pdf():
     """
     Genera y descarga PDF con los resultados de la consulta
