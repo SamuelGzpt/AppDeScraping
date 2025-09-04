@@ -2,6 +2,7 @@
 flask==3.0.0
 selenium==4.15.2
 webdriver-manager==4.0.1
+undetected-chromedriver==3.5.4
 reportlab==4.0.7
 requests==2.31.0
 beautifulsoup4==4.12.2
@@ -15,15 +16,6 @@ urllib3==2.1.0
 # Para manejo de archivos de audio
 mutagen==1.47.0
 
-# Dependencias adicionales para audio
+# Dependencias adicionales
 setuptools
 wheel
-
-# PyAudio (opcional - solo si necesitas micrófono)
-# pyaudio==0.2.11
-
-# Google Cloud Speech (opcional - para reconocimiento más preciso)
-# google-cloud-speech
-
-# Para descarga de archivos (opcional)
-# wget

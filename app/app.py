@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, session, send_file, jsonify
 from scraping_simit import consultar_simit
-from scraping_policia import consultar_policia  # Versión mejorada
+from scraping_policia import consultar_policia  # Versión corregida
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import io
@@ -22,13 +22,13 @@ def index():
 @app.route("/scraping", methods=["POST"])
 def scraping():
     """
-    Endpoint principal para realizar consultas de antecedentes con manejo mejorado
+    Endpoint principal para realizar consultas de antecedentes con manejo corregido
     """
     nombre = request.form.get("Nombre", "No especificado")
     cedula = request.form.get("cedula", "").strip()
     correo = request.form.get("correo", "")
 
-    print(f"[INFO] {datetime.now()} - Iniciando consulta MEJORADA para {nombre} - Cédula: {cedula}")
+    print(f"[INFO] {datetime.now()} - Iniciando consulta REAL para {nombre} - Cédula: {cedula}")
 
     # Inicializar resultados
     simit_result = None
@@ -40,50 +40,60 @@ def scraping():
     # Consultar SIMIT
     try:
         print("[INFO] 🚗 Consultando SIMIT...")
-        simit_result = consultar_simit(cedula)
+        simit_response = consultar_simit(cedula)
         
-        if simit_result and simit_result.strip():
-            print("[✅] SIMIT completado exitosamente")
-            simit_status = "exitoso"
+        # Manejar respuesta del SIMIT correctamente
+        if isinstance(simit_response, dict):
+            if simit_response.get("error"):
+                simit_result = f"Error en SIMIT: {simit_response['error']}"
+                simit_status = "error"
+            elif simit_response.get("texto"):
+                simit_result = simit_response["texto"]
+                simit_status = "exitoso"
+                print("[✅] SIMIT completado exitosamente")
+            else:
+                simit_result = "No se encontraron infracciones de tránsito registradas"
+                simit_status = "sin_datos"
         else:
-            simit_result = "No se encontraron infracciones de tránsito registradas"
-            simit_status = "sin_datos"
+            # Si no es diccionario, usar como texto directo
+            simit_result = str(simit_response) if simit_response else "No se encontraron infracciones de tránsito"
+            simit_status = "exitoso"
             
     except Exception as e:
         print(f"[❌] Error SIMIT: {str(e)}")
         print(f"[DEBUG] Stack trace SIMIT: {traceback.format_exc()}")
-        simit_result = "No se pudo consultar SIMIT en este momento"
+        simit_result = f"No se pudo consultar SIMIT: {str(e)}"
         simit_status = "error"
 
-    # Consultar Policía con sistema mejorado
+    # Consultar Policía con sistema REAL (sin simulación)
     try:
-        print(f"[INFO] 🛡️ Consultando Antecedentes Policiales (Sistema Mejorado)...")
+        print(f"[INFO] 🛡️ Consultando Antecedentes Policiales (Sistema REAL)...")
         
-        policia_result = consultar_policia(cedula)
+        policia_response = consultar_policia(cedula)
         
-        if isinstance(policia_result, dict):
-            if policia_result.get("status") == "success":
-                print(f"[✅] Policía completado exitosamente con método: {policia_result.get('metodo', 'desconocido')}")
+        if isinstance(policia_response, dict):
+            if policia_response.get("status") == "success":
+                print(f"[✅] Policía completado exitosamente con método: {policia_response.get('metodo', 'desconocido')}")
                 policia_status = "exitoso"
-                metodos_usados.append(policia_result.get('metodo', 'multiple_strategies'))
+                metodos_usados.append(policia_response.get('metodo', 'consulta_real'))
                 
                 # Extraer texto del resultado
-                policia_text = policia_result.get("texto", "Consulta completada")
-                tiene_antecedentes = policia_result.get("tiene_antecedentes", False)
+                policia_text = policia_response.get("texto", "Consulta completada")
+                tiene_antecedentes = policia_response.get("tiene_antecedentes", False)
                 
-                # Mejorar el mensaje basado en el resultado
+                # Mostrar resultado REAL sin modificaciones
                 if tiene_antecedentes:
-                    policia_result = f"⚠️ SE ENCONTRARON ANTECEDENTES:\n{policia_text}"
+                    policia_result = f"⚠️ RESULTADO ENCONTRADO:\n{policia_text}"
                 else:
-                    policia_result = f"✅ SIN ANTECEDENTES POLICIALES:\n{policia_text}"
+                    policia_result = f"✅ RESULTADO OBTENIDO:\n{policia_text}"
                     
             else:
-                print(f"[⚠️] Error en consulta Policía: {policia_result.get('error', 'Error desconocido')}")
-                policia_result = "No se pudieron consultar los antecedentes policiales"
+                print(f"[⚠️] Error en consulta Policía: {policia_response.get('error', 'Error desconocido')}")
+                policia_result = f"Error en consulta: {policia_response.get('error', 'Error desconocido')}"
                 policia_status = "error"
         else:
             # Si no es diccionario, usar como texto directo
-            policia_result = str(policia_result) if policia_result else "No se encontraron antecedentes policiales"
+            policia_result = str(policia_response) if policia_response else "No se pudo completar la consulta"
             policia_status = "exitoso"
             metodos_usados.append("consulta_directa")
         
@@ -96,11 +106,11 @@ def scraping():
     # Preparar resumen de consulta
     consulta_exitosa = simit_status in ["exitoso", "sin_datos"] and policia_status in ["exitoso", "sin_datos"]
     
-    # Guardar en sesión para descargar PDF después
+    # Guardar en sesión para descargar PDF después - CORREGIDO
     session["nombre"] = nombre
     session["cedula"] = cedula
     session["correo"] = correo
-    session["simit_result"] = simit_result
+    session["simit_result"] = simit_result  # CORREGIDO: era session["texto"]
     session["policia_result"] = policia_result
     session["simit_status"] = simit_status
     session["policia_status"] = policia_status
@@ -108,7 +118,7 @@ def scraping():
     session["consulta_exitosa"] = consulta_exitosa
     session["fecha_consulta"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    print(f"[✅] {datetime.now()} - Consulta completada, mostrando resultados")
+    print(f"[✅] {datetime.now()} - Consulta completada, mostrando resultados REALES")
     print(f"[INFO] 📊 Estado final - SIMIT: {simit_status}, Policía: {policia_status}")
 
     return render_template(
@@ -124,13 +134,13 @@ def scraping():
     )
 
 
-@app.route("/test_multiple_strategies", methods=["GET", "POST"])
-def test_multiple_strategies():
+@app.route("/test_real_scraping", methods=["GET", "POST"])
+def test_real_scraping():
     """
-    Ruta específica para probar el sistema de múltiples estrategias
+    Ruta para probar el scraping REAL (sin simulaciones)
     """
     if request.method == "GET":
-        return render_template("test_strategies.html")
+        return render_template("test_real.html")
     
     try:
         cedula = request.form.get("cedula", "").strip()
@@ -141,19 +151,28 @@ def test_multiple_strategies():
                 "error": "Cédula requerida"
             }), 400
         
-        print(f"[TEST STRATEGIES] Probando múltiples estrategias para cédula: {cedula}")
+        print(f"[TEST REAL] Probando scraping real para cédula: {cedula}")
         
-        resultado = consultar_policia(cedula)
+        # Probar SIMIT
+        print("[INFO] Probando SIMIT...")
+        simit_resultado = consultar_simit(cedula)
+        
+        # Probar Policía
+        print("[INFO] Probando Policía...")
+        policia_resultado = consultar_policia(cedula)
         
         return jsonify({
             "success": True,
-            "resultado": resultado,
+            "resultados": {
+                "simit": simit_resultado,
+                "policia": policia_resultado
+            },
             "cedula": cedula,
             "timestamp": datetime.now().isoformat()
         })
         
     except Exception as e:
-        print(f"[ERROR] Error en test_multiple_strategies: {str(e)}")
+        print(f"[ERROR] Error en test_real_scraping: {str(e)}")
         print(f"[DEBUG] Stack trace: {traceback.format_exc()}")
         
         return jsonify({
@@ -167,14 +186,14 @@ def test_multiple_strategies():
 @app.route("/descargar_pdf")  # Alias para compatibilidad
 def download_pdf():
     """
-    Genera y descarga PDF mejorado con los resultados de la consulta
+    Genera y descarga PDF corregido con los resultados de la consulta
     """
     try:
-        # Obtener datos de la sesión
+        # Obtener datos de la sesión - CORREGIDO
         nombre = session.get("nombre", "No especificado")
         cedula = session.get("cedula", "")
         correo = session.get("correo", "")
-        simit_result = session.get("texto", "No disponible")
+        simit_result = session.get("simit_result", "No disponible")  # CORREGIDO: era session.get("texto")
         policia_result = session.get("policia_result", "No disponible")
         simit_status = session.get("simit_status", "unknown")
         policia_status = session.get("policia_status", "unknown")
@@ -189,7 +208,7 @@ def download_pdf():
         
         # Título principal
         c.setFont("Helvetica-Bold", 18)
-        c.drawString(50, height - 50, "CONSULTA DE ANTECEDENTES")
+        c.drawString(50, height - 50, "CONSULTA DE ANTECEDENTES - RESULTADOS REALES")
         
         # Línea decorativa
         c.setStrokeColorRGB(0.2, 0.4, 0.8)
@@ -226,7 +245,7 @@ def download_pdf():
         c.drawString(50, y_position, f"Fecha de consulta: {fecha_consulta}")
         y_position -= 30
         
-        # Resultados SIMIT
+        # Resultados SIMIT - CORREGIDO
         c.setFont("Helvetica-Bold", 14)
         c.drawString(50, y_position, "🚗 RESULTADOS SIMIT (INFRACCIONES DE TRÁNSITO)")
         y_position -= 20
@@ -252,9 +271,14 @@ def download_pdf():
         c.setFillColorRGB(0, 0, 0)  # Resetear a negro
         y_position -= 15
         
-        # Contenido SIMIT
+        # Contenido SIMIT - CORREGIDO para mostrar el resultado real
         c.setFont("Helvetica", 9)
-        simit_text = str(simit_result)
+        if simit_result and simit_result != "No disponible":
+            simit_text = str(simit_result)
+        else:
+            simit_text = "No se pudo obtener información del SIMIT"
+        
+        # Procesar texto del SIMIT línea por línea
         lines = textwrap.wrap(simit_text, width=85)
         for line in lines:
             if y_position < 100:
@@ -265,9 +289,9 @@ def download_pdf():
         
         y_position -= 25
         
-        # Resultados Policía
+        # Resultados Policía - REAL
         c.setFont("Helvetica-Bold", 14)
-        c.drawString(50, y_position, "🛡️ RESULTADOS ANTECEDENTES POLICIALES")
+        c.drawString(50, y_position, "🛡️ RESULTADOS ANTECEDENTES POLICIALES (REALES)")
         y_position -= 20
         
         # Estado Policía
@@ -284,12 +308,12 @@ def download_pdf():
             c.drawString(50, y_position, f"Métodos utilizados: {', '.join(metodos_usados)}")
             y_position -= 15
         
-        # Contenido Policía
+        # Contenido Policía - REAL sin simulación
         c.setFont("Helvetica", 9)
         if isinstance(policia_result, dict):
             policia_text = policia_result.get("texto", str(policia_result))
         else:
-            policia_text = str(policia_result)
+            policia_text = str(policia_result) if policia_result else "No se pudo obtener resultado"
             
         lines = textwrap.wrap(policia_text, width=85)
         for line in lines:
@@ -310,17 +334,19 @@ def download_pdf():
         y_position -= 15
         
         c.setFont("Helvetica", 9)
-        c.drawString(50, y_position, "Sistema: Consulta Automatizada de Antecedentes v2.0")
+        c.drawString(50, y_position, "Sistema: Consulta Automatizada de Antecedentes v3.0 REAL")
         y_position -= 12
-        c.drawString(50, y_position, f"Tecnología: Múltiples estrategias de consulta")
+        c.drawString(50, y_position, f"Tecnología: Scraping real con resolución de CAPTCHA por audio")
         y_position -= 12
-        c.drawString(50, y_position, f"Métodos aplicados: {len(metodos_usados)} estrategia(s)")
+        c.drawString(50, y_position, f"Métodos aplicados: {len(metodos_usados)} estrategia(s) reales")
         y_position -= 12
-        c.drawString(50, y_position, "Validez: Este reporte es informativo y no constituye certificación oficial")
+        c.drawString(50, y_position, "IMPORTANTE: Estos son resultados REALES obtenidos directamente de los sistemas oficiales")
+        y_position -= 12
+        c.drawString(50, y_position, "Validez: Este reporte contiene información real pero no constituye certificación oficial")
         
         # Footer
         c.setFont("Helvetica", 8)
-        c.drawString(50, 30, f"Generado el {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | Sistema Automatizado")
+        c.drawString(50, 30, f"Generado el {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | Sistema de Consulta Real")
         
         c.save()
         buffer.seek(0)
@@ -328,7 +354,7 @@ def download_pdf():
         return send_file(
             buffer,
             as_attachment=True,
-            download_name=f"antecedentes_{cedula}_{fecha_consulta.replace(':', '-').replace(' ', '_')}.pdf",
+            download_name=f"antecedentes_REALES_{cedula}_{fecha_consulta.replace(':', '-').replace(' ', '_')}.pdf",
             mimetype='application/pdf'
         )
         
@@ -345,21 +371,24 @@ def status():
     """
     return jsonify({
         "status": "active",
-        "version": "2.0",
+        "version": "3.0_REAL",
         "features": [
-            "multiple_captcha_strategies",
-            "improved_audio_recognition", 
-            "fallback_systems",
-            "enhanced_pdf_reports"
+            "real_captcha_audio_solving",
+            "no_simulation_police_scraping", 
+            "fixed_simit_pdf_display",
+            "enhanced_pdf_reports_with_real_data"
         ],
-        "timestamp": datetime.now().isoformat()
+        "timestamp": datetime.now().isoformat(),
+        "warning": "Este sistema realiza consultas REALES - sin simulaciones"
     })
 
 
 if __name__ == "__main__":
-    print("🚀 Iniciando servidor Flask MEJORADO...")
-    print("🎵 Sistema de Múltiples Estrategias CAPTCHA activado")
-    print("🛡️ Fallback garantizado habilitado")
+    print("🚀 Iniciando servidor Flask REAL...")
+    print("🎵 Sistema de Resolución REAL de CAPTCHA por Audio activado")
+    print("🛡️ Scraping REAL de antecedentes policiales (sin simulación)")
+    print("🚗 Corrección de visualización de resultados SIMIT en PDF")
     print("📱 Accede a: http://localhost:5000")
     print("📊 Estado del sistema: http://localhost:5000/status")
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    print("⚠️  ADVERTENCIA: Este sistema realiza consultas REALES en los sistemas oficiales")
+    app.run(debug=True, host="0.0.0.0", port=5000)  
