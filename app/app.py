@@ -323,26 +323,26 @@ def download_pdf():
             c.drawString(50, y_position, line)
             y_position -= 12
         
-        # Información técnica (al final)
-        if y_position < 150:
-            c.showPage()
-            y_position = height - 50
+        # # Información técnica (al final)
+        # if y_position < 150:
+        #     c.showPage()
+        #     y_position = height - 50
         
-        y_position -= 30
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(50, y_position, "INFORMACIÓN TÉCNICA")
-        y_position -= 15
+        # y_position -= 30
+        # c.setFont("Helvetica-Bold", 12)
+        # c.drawString(50, y_position, "INFORMACIÓN TÉCNICA")
+        # y_position -= 15
         
-        c.setFont("Helvetica", 9)
-        c.drawString(50, y_position, "Sistema: Consulta Automatizada de Antecedentes v3.0 REAL")
-        y_position -= 12
-        c.drawString(50, y_position, f"Tecnología: Scraping real con resolución de CAPTCHA por audio")
-        y_position -= 12
-        c.drawString(50, y_position, f"Métodos aplicados: {len(metodos_usados)} estrategia(s) reales")
-        y_position -= 12
-        c.drawString(50, y_position, "IMPORTANTE: Estos son resultados REALES obtenidos directamente de los sistemas oficiales")
-        y_position -= 12
-        c.drawString(50, y_position, "Validez: Este reporte contiene información real pero no constituye certificación oficial")
+        # c.setFont("Helvetica", 9)
+        # c.drawString(50, y_position, "Sistema: Consulta Automatizada de Antecedentes v3.0 REAL")
+        # y_position -= 12
+        # c.drawString(50, y_position, f"Tecnología: Scraping real con resolución de CAPTCHA por audio")
+        # y_position -= 12
+        # c.drawString(50, y_position, f"Métodos aplicados: {len(metodos_usados)} estrategia(s) reales")
+        # y_position -= 12
+        # c.drawString(50, y_position, "IMPORTANTE: Estos son resultados REALES obtenidos directamente de los sistemas oficiales")
+        # y_position -= 12
+        # c.drawString(50, y_position, "Validez: Este reporte contiene información real pero no constituye certificación oficial")
         
         # Footer
         c.setFont("Helvetica", 8)
