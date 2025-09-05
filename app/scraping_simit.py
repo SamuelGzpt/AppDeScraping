@@ -147,10 +147,19 @@ def consultar_simit(cedula):
             campo_busqueda.submit()
 
         # 3️ Esperar a que aparezca el texto de resultado
-        resultado_div = wait.until(EC.visibility_of_element_located((
-            By.CSS_SELECTOR,
-            "div.col-lg-6.text-lg-left.text-center.px-lg-5.px-3.mt-lg-0.mt-md-5.mt-3"
-        )))
+        try:
+            # Intentar primero con el selector CSS
+            resultado_div = wait.until(EC.visibility_of_element_located((
+                By.CSS_SELECTOR,
+                "div.col-lg-6.text-lg-left.text-center.px-lg-5.px-3.mt-lg-0.mt-md-5.mt-3"
+            )))
+        except TimeoutException:
+            # Si falla, intentar con el selector XPath
+            resultado_div = wait.until(EC.visibility_of_element_located((
+                By.XPATH,
+                "//*[@id='mainView']/div/div[1]/div[2]/div/div[1]/div/div"
+            )))
+        
         texto = resultado_div.text.strip()
 
         return {
