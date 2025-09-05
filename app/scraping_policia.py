@@ -126,32 +126,64 @@ def convert_audio():
 
 
 def get_audio_url(driver):
-    """Obtiene URL del audio CAPTCHA"""
-    selectors = [
+    """Obtiene URL del audio CAPTCHA con múltiples estrategias"""
+    strategies = [
+        # Estrategia 1: Selectores estándar
+        ".rc-audiochallenge-tdownload-link",
         ".rc-audiochallenge-tdownload a",
         "a[href*='audio']",
-        "a[href*='mp3']"
+        "a[href*='mp3']",
+        "a[href*='wav']",
+        
+        # Estrategia 2: Audio element
+        "audio[src]",
+        
+        # Estrategia 3: Download links
+        "a[download]",
+        "a[href*='recaptcha']"
     ]
     
-    for selector in selectors:
+    for selector in strategies:
         try:
-            js = f"var element = document.querySelector('{selector}'); return element ? element.href : null;"
+            if selector == "audio[src]":
+                js = f"var element = document.querySelector('{selector}'); return element ? element.src : null;"
+            else:
+                js = f"var element = document.querySelector('{selector}'); return element ? element.href : null;"
+                
             audio_url = driver.execute_script(js)
-            if audio_url and 'http' in audio_url:
+            if audio_url and 'http' in audio_url and ('audio' in audio_url or 'mp3' in audio_url or 'wav' in audio_url or 'recaptcha' in audio_url):
                 return audio_url
         except:
             continue
     
-    # Búsqueda en HTML completo
+    # Búsqueda exhaustiva en HTML
     try:
         js = """
         var html = document.documentElement.innerHTML;
-        var match = html.match(/https?:\/\/[^"'\s]+\.(mp3|wav|ogg)/i);
-        return match ? match[0] : null;
+        var patterns = [
+            /https?:\/\/[^"'\s]+\.mp3[^"'\s]*/gi,
+            /https?:\/\/[^"'\s]+\.wav[^"'\s]*/gi,
+            /https?:\/\/[^"'\s]+audio[^"'\s]*/gi,
+            /https?:\/\/[^"'\s]*recaptcha[^"'\s]*audio[^"'\s]*/gi
+        ];
+        
+        for (var i = 0; i < patterns.length; i++) {
+            var matches = html.match(patterns[i]);
+            if (matches && matches.length > 0) {
+                return matches[0].replace(/['"]/g, '');
+            }
+        }
+        return null;
         """
-        return driver.execute_script(js)
+        
+        result = driver.execute_script(js)
+        if result:
+            return result
+            
     except:
-        return None
+        pass
+    
+    return None
 
 
 def create_driver():
@@ -399,72 +431,110 @@ def consultar_policia(cedula):
             }
             return false;
             """
-            driver.execute_script(checkbox_js)
+            checkbox_clicked = driver.execute_script(checkbox_js)
+            
+            if not checkbox_clicked:
+                driver.switch_to.default_content()
+                return {"status": "error", "error": "No se pudo marcar checkbox CAPTCHA", "metodo": "captcha_checkbox_error"}
             
             time.sleep(4)
             driver.switch_to.default_content()
             
-            # Verificar si necesita challenge
+            # Verificar si aparece challenge (desafío)
+            challenge_detected = False
             try:
-                challenge_iframe = WebDriverWait(driver, 5).until(
-                    EC.presence_of_element_located((By.XPATH, "//iframe[contains(@title, 'challenge')]"))
+                challenge_iframe = WebDriverWait(driver, 3).until(
+                    EC.presence_of_element_located((By.XPATH, "//iframe[contains(@title, 'challenge') or contains(@src, 'bframe')]"))
                 )
-                
-                driver.switch_to.frame(challenge_iframe)
-                time.sleep(2)
-                
-                # Activar audio
-                audio_js = """
-                var audioBtn = document.getElementById('recaptcha-audio-button');
-                if (audioBtn) {
-                    audioBtn.click();
-                    return true;
-                }
-                return false;
-                """
-                driver.execute_script(audio_js)
-                time.sleep(3)
-                
-                # Obtener y procesar audio
-                audio_url = get_audio_url(driver)
-                if audio_url:
-                    if download_audio(audio_url) and convert_audio():
-                        text = recognize_audio_captcha("temp_audio.wav")
+                challenge_detected = True
+            except TimeoutException:
+                # No hay challenge, CAPTCHA resuelto automáticamente
+                challenge_detected = False
+            
+            # Solo procesar audio si hay challenge
+            if challenge_detected:
+                try:
+                    driver.switch_to.frame(challenge_iframe)
+                    time.sleep(2)
+                    
+                    # Verificar si hay botón de audio disponible
+                    audio_available_js = """
+                    var audioBtn = document.getElementById('recaptcha-audio-button');
+                    return audioBtn && audioBtn.offsetParent !== null;
+                    """
+                    
+                    if driver.execute_script(audio_available_js):
+                        # Activar audio
+                        audio_js = """
+                        var audioBtn = document.getElementById('recaptcha-audio-button');
+                        if (audioBtn) {
+                            audioBtn.click();
+                            return true;
+                        }
+                        return false;
+                        """
                         
-                        if text:
-                            response_js = f"""
-                            var input = document.getElementById('audio-response');
-                            if (input) {{
-                                input.value = '{text}';
-                                input.dispatchEvent(new Event('input', {{bubbles: true}}));
-                                return true;
-                            }}
-                            return false;
-                            """
-                            driver.execute_script(response_js)
-                            
-                            time.sleep(2)
-                            
-                            verify_js = """
-                            var btn = document.getElementById('recaptcha-verify-button');
-                            if (btn) {
-                                btn.click();
-                                return true;
-                            }
-                            return false;
-                            """
-                            driver.execute_script(verify_js)
-                            
+                        if driver.execute_script(audio_js):
                             time.sleep(3)
-                
-                driver.switch_to.default_content()
-                
-            except:
-                driver.switch_to.default_content()
+                            
+                            # Obtener y procesar audio
+                            audio_url = get_audio_url(driver)
+                            if audio_url:
+                                if download_audio(audio_url) and convert_audio():
+                                    text = recognize_audio_captcha("temp_audio.wav")
+                                    
+                                    if text:
+                                        # Ingresar respuesta
+                                        response_js = f"""
+                                        var input = document.getElementById('audio-response');
+                                        if (input) {{
+                                            input.value = '{text}';
+                                            input.dispatchEvent(new Event('input', {{bubbles: true}}));
+                                            return true;
+                                        }}
+                                        return false;
+                                        """
+                                        
+                                        if driver.execute_script(response_js):
+                                            time.sleep(2)
+                                            
+                                            # Verificar respuesta
+                                            verify_js = """
+                                            var btn = document.getElementById('recaptcha-verify-button');
+                                            if (btn) {
+                                                btn.click();
+                                                return true;
+                                            }
+                                            return false;
+                                            """
+                                            driver.execute_script(verify_js)
+                                            time.sleep(3)
+                    
+                    driver.switch_to.default_content()
+                    
+                except Exception as challenge_error:
+                    driver.switch_to.default_content()
+                    # Continuar aunque falle el challenge
+                    pass
+            
+            # Limpiar archivos temporales
+            for file in ["temp_audio.mp3", "temp_audio.wav"]:
+                try:
+                    if os.path.exists(file):
+                        os.remove(file)
+                except:
+                    pass
             
         except Exception as e:
             try:
                 driver.switch_to.default_content()
+                # Limpiar archivos en caso de error
+                for file in ["temp_audio.mp3", "temp_audio.wav"]:
+                    try:
+                        if os.path.exists(file):
+                            os.remove(file)
+                    except:
+                        pass
             except:
                 pass
             return {"status": "error", "error": "Error procesando CAPTCHA", "metodo": "captcha_error"}
